@@ -16,7 +16,7 @@ such as `/home`, `/tpa`, `/pvp`, `/market` or `/board`. Players never get access
 - License: MIT
 - Author: @sonruhin
 
-> Upgrading from 1.1.0? Read [UPDATE-2.1.0.md](UPDATE-2.1.0.md) first. Stored commands are migrated automatically.
+> Upgrading from 1.1.0? Read and [Update New Version](https://github.com/sonruhin/omni-tools/releases#release-Omni-Tools-Beta) first. Stored commands are migrated automatically.
 
 ---
 
