@@ -8,7 +8,7 @@ in-game, without writing code, while players only ever see simple, safe commands
 Everything an operator does lives under one command, `/omni`. Everything a player does goes through short **aliases**
 such as `/home`, `/tpa`, `/pvp`, `/market` or `/board`. Players never get access to `/omni` itself.
 
-- Version: 2.1.0 (build 5)
+- Version: 2.2.0 (build 7)
 - Minecraft: 1.21.11
 - Loader: Fabric Loader 0.16.0 or newer
 - Java: 21 or newer
@@ -16,7 +16,7 @@ such as `/home`, `/tpa`, `/pvp`, `/market` or `/board`. Players never get access
 - License: MIT
 - Author: @sonruhin
 
-> Upgrading from 1.1.0? Read and [Update New Version](https://github.com/sonruhin/omni-tools/releases#release-Omni-Tools-Beta) first. Stored commands are migrated automatically.
+> Upgrading from 2.1.0? Read [Update New Version](https://github.com/sonruhin/omni-tools/releases/tag/Omni-Tools-Release) first. Stored commands are migrated automatically.
 
 ---
 
@@ -33,23 +33,24 @@ such as `/home`, `/tpa`, `/pvp`, `/market` or `/board`. Players never get access
 9. [Minigames](#minigames)
 10. [Universal scoreboard](#universal-scoreboard)
 11. [Admin toolbox](#admin-toolbox)
-12. [Kits](#kits)
-13. [Chest menus](#chest-menus)
-14. [Server shop slots (prices)](#server-shop-slots-prices)
-15. [Aliases (custom commands)](#aliases-custom-commands)
-16. [Steps, timing and placeholders](#steps-timing-and-placeholders)
-17. [Economy](#economy)
-18. [Player market](#player-market)
-19. [Duels, TPA and RTP](#duels-tpa-and-rtp)
-20. [Default player commands](#default-player-commands)
-21. [Fabric API hooks](#fabric-api-hooks)
-22. [Configuration files](#configuration-files)
-23. [settings.json reference](#settingsjson-reference)
-24. [Safety design](#safety-design)
-25. [Troubleshooting and FAQ](#troubleshooting-and-faq)
-26. [Building from source](#building-from-source)
-27. [Known limits](#known-limits)
-28. [License](#license)
+12. [Dimensions](#dimensions)
+13. [Kits](#kits)
+14. [Chest menus](#chest-menus)
+15. [Server shop slots (prices)](#server-shop-slots-prices)
+16. [Aliases (custom commands)](#aliases-custom-commands)
+17. [Steps, timing and placeholders](#steps-timing-and-placeholders)
+18. [Economy](#economy)
+19. [Player market](#player-market)
+20. [Duels, TPA and RTP](#duels-tpa-and-rtp)
+21. [Default player commands](#default-player-commands)
+22. [Fabric API hooks](#fabric-api-hooks)
+23. [Configuration files](#configuration-files)
+24. [settings.json reference](#settingsjson-reference)
+25. [Safety design](#safety-design)
+26. [Troubleshooting and FAQ](#troubleshooting-and-faq)
+27. [Building from source](#building-from-source)
+28. [Known limits](#known-limits)
+29. [License](#license)
 
 ---
 
@@ -62,6 +63,7 @@ such as `/home`, `/tpa`, `/pvp`, `/market` or `/board`. Players never get access
 | PvP | Ranked queue with Elo and leagues, arenas with snapshots and auto-reset, loadouts, kill rewards with anti-farm, assists, kill streaks, bounties, combat tag, seasons, open-world PvP. |
 | Minigames | Spleef, TNT run, parkour, bedwars, skywars, KOTH, team deathmatch, free for all, last man standing. One engine runs both PvP matches and minigames. |
 | Universal scoreboard | Profiles with a trigger, priority and placeholders. One board per player or one shared board, plus tab header/footer and action bar. |
+| Dimensions | Create your own dimensions inside the same world (void, flat, overworld, nether, end, floating islands ...). Every system works in them: homes, warps, claims, arenas, minigames, RTP, boards. Rules per dimension (build, pvp, claims). |
 | Admin toolbox | Server health (TPS, memory, chunks, entities), drop clean-up, inspect, freeze, audit log reader, in-game settings editor, backups, announcements, maintenance mode. |
 | Kits | Save any inventory as a named kit and hand it to players. |
 | Chest menus | Build clickable chest GUIs in-game. Each slot can show an item, run commands, or sell something. |
@@ -86,7 +88,7 @@ Other highlights:
 1. Install Fabric Loader 0.16.0 or newer for Minecraft 1.21.11.
 2. Install Fabric API.
 3. Use Java 21 or newer.
-4. Put `omnitools-2.1.0.jar` into the `mods` folder.
+4. Put `omnitools-2.2.0.jar` into the `mods` folder.
 5. Start the server. `config/omnitools/` is created automatically.
 6. As an operator run `/omni admin hooks` (all hooks should be green) and `/omni admin install` (creates the player commands such as `/home` and `/pvp`).
 
@@ -323,7 +325,10 @@ Rules that apply in arenas **and** in the open world (open world needs the death
 
 | Command | Description |
 | --- | --- |
-| `create <name> <type>` | New arena. Types: `duel ffa tdm koth lms practice spleef tnt_run parkour bedwars skywars`. |
+| `create <name> <type> [dimension]` | New arena. Types: `duel ffa tdm koth lms practice spleef tnt_run parkour bedwars skywars`. Without a dimension the arena takes the world of its first spawn. |
+| `world <name> <dimension>` | Bind an arena without spawns to a dimension. |
+| `newdim <name> <template>` | Create a dimension just for this arena (needs one restart). |
+| `tp <name>` | Go to the arena (lobby, first spawn, or the middle of its dimension). |
 | `delete <name>`, `list`, `info <name>` | Manage and inspect. `info` says what is still missing. |
 | `spawn <name> add\|clear` | Spawn points at your position (all in the same world). |
 | `lobby <name>` and `spec <name>` | Lobby point and spectator point. |
@@ -371,6 +376,19 @@ Phases: lobby, countdown (players are frozen with slowness and jump boost), runn
 | `parkour` | First player into the finish region. |
 | `bedwars` | Last team with a bed or members alive. A destroyed bed means no respawn. Own beds are protected. |
 | `practice` | No end. |
+
+### Game type extras (2.2.0)
+
+| Type | What is new | Setup (operators, `/omni games game ...`) |
+| --- | --- | --- |
+| `tnt_run` | The floor disappears under the players: every block of the `floor` list that a player touches vanishes after `floordelay` x 0.1 s, and the TNT layer under it too. | `set <name> floor sand+gravel` (default), `set <name> floordelay 8`. Take a `snapshot` so the floor is rebuilt after each game. |
+| `skywars` | Loot chests are emptied and filled when the game starts, optionally refilled, and emptied again at the end. | `chest <name> add [island\|mid]`, right-click every chest, `chest <name> done`. `set <name> refill 180` (seconds, 0 = off). `chest <name> fill` is a test fill. |
+| `bedwars` | Item generators (iron, gold, diamond, emerald) and shop villagers with an item shop (prices are items). | `gen <name> add iron red` (stand on the spot; team generators for a team, none for shared), `shop <name> add` (villager stands where you stand). |
+| `parkour` | Checkpoints: touching one saves it, falling or dying sends you back to it, the winner time is shown. | `checkpoint <name> add` in course order. Players: `/mg checkpoint`, `/mg restart`. |
+
+Loot tables, generator speeds and the bedwars shop are in `config/omnitools/gamex.json` (written on the first start; edit it, then `/omni reload`).
+Prices look like `iron:4`, `gold:12`, `emerald:2`, `diamond:3`. `{team}` in a shop item id becomes the team color (`minecraft:{team}_wool`).
+Armor from the shop goes straight on the player. A purchase checks price and free room before anything is taken.
 
 Lives (`lives`), time limit (`timelimit`), friendly fire, building (`build`) and rewards (`rewardwin`, `rewardlose`, `rewardkit`) are set per game.
 Minigame results are saved under the mode `mg:<type>`.
@@ -427,7 +445,7 @@ Write `%name%` or `%name:argument%`. Unknown placeholders stay visible, so a typ
 
 | Group | Placeholders |
 | --- | --- |
-| Player | `player`, `nick`, `rank`, `rank_prefix`, `rank_display`, `power`, `balance`, `balance_raw`, `health`, `world`, `world_short`, `x`, `y`, `z`, `channel` |
+| Player | `player`, `nick`, `rank`, `rank_prefix`, `rank_display`, `power`, `balance`, `balance_raw`, `health`, `world`, `world_short`, `dimension`, `dimension_name`, `x`, `y`, `z`, `channel` |
 | Server | `online`, `max`, `tps`, `mspt`, `time`, `date`, `server`, `games_running` |
 | SMP | `homes`, `homes_max`, `claims`, `claims_max`, `claimbox`, `listings` |
 | PvP | `pvp_elo`, `pvp_tier`, `pvp_next`, `pvp_wins`, `pvp_losses`, `pvp_kills`, `pvp_deaths`, `pvp_kd` (all take `:mode`, default `duel`), `pvp_streak`, `pvp_bounty`, `combat`, `queue`, `queue_wait`, `queue_size` |
@@ -461,6 +479,7 @@ Data: `config/omnitools/boards.json`. Per-player boards and the tab list depend 
 | `announce on\|off\|list\|now\|interval <min>\|add <text>\|remove <n>` | 3 | Rotating announcements. |
 | `maintenance on [message]\|off\|status` | 3 | Kick everyone below power 2 and refuse them until it is off. |
 | `season new [keep%]` | 3 | New PvP season. |
+| `dim ...` | 3 | Create and manage dimensions, see [Dimensions](#dimensions). |
 | `mute`, `unmute`, `mutes` | 2 | See [Chat, nicknames and mutes](#chat-nicknames-and-mutes). |
 | `rank ...` | 3 | See [Ranks](#ranks). |
 | `eco give\|take\|set\|reset` | 3 | See [Economy](#economy). |
@@ -469,6 +488,94 @@ Data: `config/omnitools/boards.json`. Per-player boards and the tab list depend 
 | `reload` and `hooks` | 3 | Reload files; show hook and scoreboard status. |
 
 `/omni reload` waits (at most 2 minutes) for running command sequences before it reloads.
+
+---
+
+## Dimensions
+
+OmniTools can create **new dimensions inside the one world of your server**: another overworld, nether or end, a void ("air") world, a superflat world, floating islands and more.
+They live in the same world folder (`world/dimensions/omnitools/<name>`), not in separate worlds, and appear in `/omni admin dim list` next to the vanilla dimensions.
+A dimension is named `omnitools:<name>`.
+
+### How it works (runtime with Fantasy, or one restart without it)
+
+**With the Fantasy library** (built into the OmniTools jar by `update.bat` from `libs\fantasy-*.jar`, nothing to install) a new dimension is **open at once, no restart**.
+OmniTools builds the terrain from the same templates as before, hands it to Fantasy and opens the world `omnitools:<name>`.
+Fantasy keeps the world files in `world/dimensions/omnitools/<name>`. Fantasy does not reopen worlds by itself, so OmniTools opens every runtime dimension again when the server has started.
+
+**If the jar was built without Fantasy** the old route is used: the dimension is written as a data pack file and **appears after one server restart** (`/omni admin dim apply <seconds> confirm`).
+
+`/omni admin dim status` shows which route new dimensions take. `/omni admin dim mode datapack` forces the one-restart route, `mode auto` (default) uses Fantasy when it is installed.
+Dimensions made before this update stay data pack dimensions (the list shows `runtime` for the others); both kinds work side by side.
+The mod works on a **dedicated server** (it reads the world folder from `server.properties`; `/omni admin dim folder <path>` overrides it).
+
+### Commands
+
+| Command | Description |
+| --- | --- |
+| `/omni admin dim create <name> <template> [layers]` | New dimension. `layers` is only for `flat`, for example `stone*3,grass_block`. Names: a-z, 0-9, `_` (up to 24). |
+| `/omni admin dim templates` | List of templates. |
+| `/omni admin dim list` and `info <name>` | Loaded dimensions with chunks and players; your own ones with their state (`waiting for a restart`) and what uses them. |
+| `/omni admin dim tp <dimension>` | Go there. Void dimensions get a small stone platform at 0 63 0. |
+| `/omni admin dim set <dimension> build\|pvp\|claims <true\|false>` | Rules per dimension, also for vanilla ones (see below). |
+| `/omni admin dim apply <seconds> confirm` and `cancel` | Restart countdown with warnings at 30, 10 and the last 5 seconds (data pack dimensions only). |
+| `/omni admin dim load <name>` and `unload <name>` | Runtime dimensions: open it again, or save and unload it (players inside are moved to the spawn first; not while a game runs in it). |
+| `/omni admin dim tick <name> <true\|false>` | Runtime dimensions: keep ticking when nobody is inside (default false, saves performance). |
+| `/omni admin dim doctor` | Checks every dimension, reopens runtime dimensions that are closed, lists leftovers, dimensions used by arenas/homes but not loaded. |
+| `/omni admin dim mode <auto\|datapack>` | Which route new dimensions take. |
+| `/omni admin dim delete <name> [force]` | Runtime: unloads it and deletes the world files at once (players are moved out; refused while a game runs in it). Data pack: removes it from the data pack. Both are refused while an arena, home, warp, spawn or claim uses it, unless `force`. |
+| `/omni admin dim purge <name>` | Delete the world files of a removed dimension that is not loaded (data pack dimensions: after the restart). |
+| `/omni admin dim status` | World folder, data pack format of this game, pending dimensions. |
+| `/omni admin dim rewrite`, `packmeta <json\|auto>`, `folder <path\|auto>` | Repair: rewrite the data pack, replace `pack.mcmeta`, set the world folder. |
+
+### Templates
+
+| Template | Result |
+| --- | --- |
+| `overworld`, `amplified`, `large_biomes`, `caves`, `floating` | Overworld-type terrain (same world seed, own chunks). |
+| `nether` | Another nether. |
+| `end` | Another end (islands, no dragon). |
+| `flat` | Superflat. Default layers: bedrock, 2 dirt, grass. |
+| `void` | Empty world with the overworld sky ("air"). |
+| `void_end`, `void_nether` | Empty world with the end sky or nether lighting. |
+
+### Rules per dimension
+
+`/omni admin dim set <dimension> build|pvp|claims <true|false>` works for **any** dimension, including `minecraft:overworld`. They apply at once (no restart):
+
+| Rule | When it is `false` |
+| --- | --- |
+| `build` | Players cannot break blocks or use items and containers on blocks. Rank power 1 and up and operators still can. Good for a lobby. |
+| `pvp` | Players cannot damage each other (matches have their own rules). |
+| `claims` | Players cannot create land claims there. |
+
+### In every system
+
+All systems find worlds by their id, so dimensions work everywhere:
+
+- **SMP:** homes, warps, spawn and `/back` store and use the dimension; `/rtp <dimension>` works; claims are per dimension.
+- **PvP and minigames:** `arena create <name> <type> [dimension]` puts an arena in any loaded dimension. `arena world <name> <dimension>` binds an arena that has no spawns yet. `arena newdim <name> <template>` makes a dimension **just for that arena**
+  (named `a_<arena>`; after the restart use `arena tp <name>` and place spawn, lobby, spec and region there). The same sub-commands exist under `/omni games game`.
+  Spawns, lobby, spectator point and region corners must be inside the arena's dimension; the command tells you when you are in the wrong one.
+- **Not loaded:** an arena whose dimension is not loaded is "not ready" (queues skip it, `join` refuses it, `/omni pvp arena info` says why and whether a restart is needed). If a game still cannot reach its world, it is cancelled and everybody is sent back.
+- **Coming back:** the place a player is sent back to (world, coordinates) is saved to `pvp/returns.json` the moment he is sent to a match, minigame or duel, and removed when he is back. After a crash, a restart or a deleted dimension he is returned at his next join
+  (to the server spawn, or the overworld, if the old world is gone).
+- **Boards and admin:** `%dimension%` and `%dimension_name%` placeholders, `world:` triggers, `/omni admin perf`, `entities`, `clear` and `chunks` list and accept every dimension.
+
+### Example: a lobby and an arena dimension
+
+```
+/omni admin dim create lobby void
+/omni admin dim create pit flat stone*3,grass_block
+/omni admin dim apply 30 confirm              (the server stops; start it again)
+/omni admin dim set omnitools:lobby build false
+/omni admin dim set omnitools:lobby pvp false
+/omni admin dim tp omnitools:pit
+/omni pvp arena create pit duel omnitools:pit
+/omni pvp arena spawn pit add                 (stand at spawn 1, run again at spawn 2)
+```
+
+If a created dimension is still missing after the restart, the data pack was probably rejected. Check the server log for `pack.mcmeta` errors, `/datapack list`, and `/omni admin dim status`.
 
 ---
 
@@ -799,9 +906,10 @@ All data lives in `config/omnitools/`. Files are plain JSON (logs are JSON Lines
 | `ranks.json` | Ranks, player ranks, who got vanilla op from a rank |
 | `boards.json` | Scoreboard profiles and players who turned their board off |
 | `admin.json` | Maintenance, announcements, last backup time |
-| `games.json` | PvP arenas and minigames |
+| `games.json` | PvP arenas and minigames (with their dimension) |
+| `dimensions.json` | Your custom dimensions, rules per dimension, world folder and `pack.mcmeta` overrides |
 | `smp/homes.json`, `smp/warps.json`, `smp/claims.json`, `smp/social.json` | Homes, warps and spawn, land claims, nicknames and mutes |
-| `pvp/stats.json`, `pvp/queue.json`, `pvp/bounties.json`, `pvp/vault.json` | Stats, queue, bounties, saved inventories during loadout matches |
+| `pvp/stats.json`, `pvp/queue.json`, `pvp/bounties.json`, `pvp/vault.json`, `pvp/returns.json` | Stats, queue, bounties, saved inventories during loadout matches, places players return to |
 | `snapshots/<arena>.snap` | Arena snapshots |
 | `backups/*.zip` | Backups made by `/omni admin backup` |
 | `audit.jsonl` | Money changes, listings, purchases, claims, kit gives, chest opens, alias runs, flags, blocked steps, game results, rank changes, settings changes (rotates at 16 MB) |
@@ -811,7 +919,7 @@ Safety for your data:
 - Writes are atomic and a `.bak` copy of the previous version is kept.
 - **Safe mode:** a file that cannot be read is moved to `<name>.corrupt-<time>` (never deleted or overwritten with empty data) and defaults are used. The log says so, and `/omni admin reload` tells the operator.
 - Older menu formats are converted automatically.
-- Stored commands from 1.x are moved to the new `/omni` paths once (see [UPDATE-2.1.0.md](UPDATE-2.1.0.md)).
+- Stored commands from 1.x are moved to the new `/omni` paths once (see [UPDATE-2.2.0.md](UPDATE-2.2.0.md)).
 
 ---
 
@@ -851,7 +959,7 @@ Created on first start. Edit by hand, or use `/omni admin settings set <key> <va
 | `smp.chatFormat` | Format global chat with rank prefix and nickname. |
 | `pvp.*` | Money for kills, assists and streaks, death penalty, combat tag seconds (0 = off), combat log kill, bounty tax and minimum, open-world PvP, league table, snapshot size limit. |
 | `admin.rankAdminPower` | Rank power that counts as operator (1-4). |
-| `admin.layoutVersion` | 2 = the 2.1.0 command layout is in use. Set by the mod. |
+| `admin.layoutVersion` | 2 = the 2.2.0 command layout is in use. Set by the mod. |
 | `admin.autoClear*`, `backup*` | Scheduled clean-up and backups. |
 
 ---
@@ -903,6 +1011,12 @@ The `chat` hook is missing, or `smp.chatFormat` is `false` and the channel is gl
 **My own board does not show.**
 `/omni board status` says whether per-player packets are ready. Use `/board toggle`, or check that a profile matches (`/omni board list`). A `scope global` profile works without packets.
 
+**A new dimension does not appear.**
+It needs ONE restart (`/omni admin dim apply 30 confirm`). If it is still missing afterwards the data pack was rejected: see the log, `/datapack list`, `/omni admin dim status` and `/omni admin dim packmeta`.
+
+**An arena says "the world ... is not loaded".**
+Its dimension is not loaded: restart after creating it, or bind the arena to a loaded dimension with `arena world`.
+
 **A new alias does not appear in tab-complete.**
 The name probably conflicts with an existing command. `/omni tools alias list` marks such aliases as "not registered".
 
@@ -937,10 +1051,10 @@ tools/                        dump_mc.bat / dump_mc.ps1 / McDump.java (extract c
 tests/                        unit tests of the pure logic (plain Java, no Minecraft needed)
 ```
 
-On Windows, place the project folder next to `intermediary.jar` and the `libs` folder and run `update.bat`. It copies the patch files, checks the required classes, compiles with `javac --release 21`, and creates `omnitools-2.1.0.jar`. Compiler output is saved to `build_log.txt`.
+On Windows, place the project folder next to `intermediary.jar` and the `libs` folder and run `update.bat`. It copies the patch files, checks the required classes, compiles with `javac --release 21`, and creates `omnitools-2.2.0.jar`. Compiler output is saved to `build_log.txt`.
 
 Unit tests (no Minecraft jars needed): from the `tests` folder run
-`javac -d out *.java` then `java -ea -cp out com.example.omni_tools.GuardTest` (also `LogicTest`, `Logic2Test`).
+`javac -d out *.java` then `java -ea -cp out com.example.omni_tools.GuardTest` (also `LogicTest`, `Logic2Test`, `DimTest`).
 
 Because the code uses intermediary names, a build is tied to one Minecraft version. Use `tools/dump_mc.bat` to extract the signatures of a new version.
 
@@ -958,20 +1072,39 @@ Source files by area:
 | PvP and games | `PvpCmd`, `PvpCore`, `PvpStats`, `Elo`, `AntiFarm`, `DamageLog`, `CombatTag`, `PvpTier`, `Matchmaker`, `GameDef`, `GameAdmin`, `MinigameCmd`, `Session`, `Snapshot`, `SnapCodec`, `Region` |
 | Scoreboard | `Board`, `BoardNet`, `BoardLogic`, `Placeholders` |
 | Admin | `AdminCmd` |
+| Dimensions | `Dims`, `DimSpec`, `Returns` |
 | Teleport and duels | `TpaCmd`, `RtpCmd`, `DuelCmd` |
+
+---
+
+## Shop signs
+
+An operator turns a sign into a button. Place a sign, run one command, then right-click the sign.
+
+| Command | Result when a player right-clicks the sign |
+| --- | --- |
+| `/omni admin sign menu <size> <chest>` | Opens that chest menu (`/omni tools chest`), so prices and commands of the menu work. |
+| `/omni admin sign market [name]` | Opens the player market. |
+| `/omni admin sign cmd <command>` | Runs the command as the player, with the trusted window (so `/omni ...` steps work for everybody). |
+| `/omni admin sign console <command>` | Runs a console command (`{player}` = the clicker); commands blocked for steps are refused. |
+| `/omni admin sign remove` / `cancel` / `list` | Unregister a sign (right-click it), stop picking, list all. |
+
+The first lines of the sign are written for you (`[Shop]` ...), the sign is waxed. Only operators can break a shop sign (this unregisters it).
+Players cannot use signs while they are in a match or game. Signs are stored in `config/omnitools/signs.json`.
 
 ---
 
 ## Known limits
 
-- **Not verified on a server yet.** The code is type-checked and its pure logic is unit-tested, but the full build and in-game behavior must be confirmed on your setup. Use the checklist in `docs/REPORT-2.1.0.md`.
+- **Not verified on a server yet** (this includes custom dimensions). The code is type-checked and its pure logic is unit-tested, but the full build and in-game behavior must be confirmed on your setup. Use the checklist in `docs/REPORT-2.2.0.md`.
 - **Per-player scoreboard and tab list** depend on packet constructor signatures that are discovered at start (`/omni board status`). `scope global` boards do not depend on them.
+- **Dimensions:** runtime creation needs the Fantasy library inside the jar (without it the data pack route with one restart is used). Both routes work on a dedicated server and are **not verified on a live server yet**: the Fantasy calls are made through reflection from the names in Fantasy's API dump, the data pack format (`pack.mcmeta`) is written from the game's own `version.json` (`/omni admin dim status`, `dim doctor`, `dim packmeta` are the repair tools).
 - **Nicknames** change chat and boards only. The real name stays above the head (the rank prefix shows there).
 - **Claim flags** exist only for PvP. Explosions, fire, fluids and mob griefing need engine hooks that are not available.
 - **Arena rules:** hunger and natural regeneration cannot be changed per arena.
 - **Snapshots** store block states, not chest contents.
-- **Minigames:** `tnt_run` does not remove the floor yet, `skywars` does not fill chests, `bedwars` has no generators or shops, `parkour` has no checkpoints. They run with the generic rules.
-- **Not included:** shop signs, item-based currency, per-item price mode for shop slots, a refund command, an automatic undo from the audit log.
+- **Minigames:** the 2.2.0 extras (tnt_run floor, skywars chests, bedwars generators and shop, parkour checkpoints) are written but **not tested in a real game yet**. Generators do not limit how many items pile up (items despawn after 5 minutes), bedwars has no team upgrades or traps, and the shop sells fixed items (no upgrade tiers).
+- **Not included:** item-based currency in chest menus and the market (only the bedwars shop uses items as price), per-item price mode for shop slots, a refund command, an automatic undo from the audit log.
 
 ---
 
